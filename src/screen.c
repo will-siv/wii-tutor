@@ -6,8 +6,10 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <string.h>
+#include <time.h>
 
 #include "scroll.h"
+#include "csv_parse.h"
 
 #define ROWS 28
 #define COLS 84
@@ -15,11 +17,11 @@
 static char *title = "YWCC Tutoring: Powered by ACM";
 char *big = "REALLY REALLY LONG STRING SO LONG YOU SHIT YOUR PANTR";
 
-void print_center(WINDOW *win, int start_row, int cols, char *str, int n) {
-    int center = cols / 2;
-    int half_length = n / 2;
+void print_center(WINDOW *win, struct scroll_text e) {
+    int center = e.width / 2;
+    int half_length = e.n / 2;
     int adj_col = center - half_length;
-    mvwprintw(win, start_row, adj_col, str);
+    mvwprintw(win, e.y, adj_col, e.message);
 }
 
 int main() {
@@ -27,6 +29,10 @@ int main() {
     WINDOW *main, *left, *center, *right;
     WINDOW *tutorbox;
     WINDOW *tutor_column[4];
+    struct scroll_text temp;
+    time_t current_time;
+    struct tm *time_info;
+    char timeString[8];
 
     initscr();
     noecho();
@@ -55,11 +61,30 @@ int main() {
                 tutor_column[i] = subwin(tutorbox, 0,  COLS/t_cols, 2, col+1);
         }
         box(tutorbox, 0,0);
-        print_center(main, 1, COLS, title, strlen(title));
+        temp = create_text(main, title, 1);
+        print_center(main, temp);
 
         struct scroll_text new = create_text(tutor_column[0], big, 3);
     do {
+        time(&current_time);
+        time_info = localtime(&current_time);
+        strftime(timeString, 8, "%H:%M:%S", time_info);
+
         scroll_update(tutor_column[0], &new);
+        /* TODO: "semaphores", page flipping
+         * sub boxes on their own schedule?
+         *
+         */
+
+        // left sub box: Current tutors
+        print_center(left, create_text(left, "Current Tutors:", 2));
+        // middle sub box: Current classes
+        print_center(center, create_text(center, "Classes Offered Today", 2));
+        // right sub box: motd
+        print_center(right, create_text(right, "MOTD", 2));
+
+        // time: bottom
+        print_center(main, create_text(main, timeString, ROWS-1));
         touchwin(main);
         wrefresh(tutor_column[0]);
         wrefresh(main);

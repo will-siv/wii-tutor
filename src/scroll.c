@@ -38,6 +38,7 @@ void scroll_update(WINDOW *win, struct scroll_text *e) {
  * DO NOT CALL if so, until all necessary text is on border.
  */
 
+/* deprecated
 void paste_scroll_text(WINDOW *win, int y, int x, char *message) {
     int direction = -1;
     int h, w, n, i;
@@ -65,4 +66,5 @@ void paste_scroll_text(WINDOW *win, int y, int x, char *message) {
     }
     }
 }
+*/
 
