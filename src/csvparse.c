@@ -88,6 +88,7 @@ static struct person *parse_tutor(char *line)
     char *name, *classes, *times;
     char *tok;
     struct person *cur = malloc(sizeof(struct person));
+    memset(cur, 0, sizeof(struct person));
     if (!cur)
         return NULL;
     for (i = 0; i < 3; ++i) {
@@ -128,17 +129,15 @@ static int parse_class_list(char *classes, struct person *p)
     char *ptr;
     for (tok = strtok(classes, ","); tok; tok = strtok(NULL, ",")) {
         ++p->class_cnt;
-        tok = strtok(NULL, ",");
     }
     nbytes = sizeof(*p->classes) * p->class_cnt;
     p->classes = malloc(nbytes);
     if (!p->classes)
         return -1;
-    /*memcpy(p->classes, classes, nbytes);*/
     clsnum = p->class_cnt;
     ptr = classes;
     for (i = 0; i < clsnum; ++i) {
-        strncpy(*(p->classes+i), ptr, 8);
+        strncpy(*(p->classes+i), ptr, CLASS_STR_LENGTH-1);
         ptr = strchr(ptr, '\0');
         ++ptr;
     }
@@ -152,7 +151,6 @@ static int parse_times(char *times, struct person *p)
     size_t i;
     for (tok = strtok(times, ","); tok; tok = strtok(NULL, ",")) {
         ++p->time_cnt;
-        tok = strtok(NULL, ",");
     }
     p->times = malloc(sizeof(struct time_interval) * p->time_cnt);
     if (!p->times)
