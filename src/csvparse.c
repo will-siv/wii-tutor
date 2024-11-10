@@ -28,12 +28,9 @@ struct person **parse_tutors(FILE *csv, size_t *tutor_count)
         return NULL;
     }
     *tutor_count = 0;
-        printf("%d\n", *tutor_count);
     while ((read = getline(&buf, &len, csv)) > 0) {
         ++*tutor_count;
-        printf("%d\n", *tutor_count);
         tutors[*tutor_count-1] = parse_tutor(buf);
-        printf("%d\n", *tutor_count);
         if (!tutors[*tutor_count-1]) {
             free_tutors(tutors, *tutor_count);
             free(buf);
@@ -142,7 +139,6 @@ static int parse_class_list(char *classes, struct person *p)
     ptr = classes;
     for (i = 0; i < clsnum; ++i) {
         strncpy(*(p->classes+i), ptr, 8);
-        printf("%s\n", ptr);
         ptr = strchr(ptr, '\0');
         ++ptr;
     }
@@ -154,7 +150,6 @@ static int parse_times(char *times, struct person *p)
     char *tok;
     char *ptr = times;
     size_t i;
-    printf("%s", ptr);
     for (tok = strtok(times, ","); tok; tok = strtok(NULL, ",")) {
         ++p->time_cnt;
         tok = strtok(NULL, ",");
@@ -165,7 +160,6 @@ static int parse_times(char *times, struct person *p)
     for (i = 0; i < p->time_cnt; ++i) {
         int wkday;
         sscanf(ptr, "%2hd-%2hd%1s", &p->times[i].time_1, &p->times[i].time_2, &wkday);
-        printf("%d\n", wkday);
         switch (wkday) {
         case 'U':
         case 'u':

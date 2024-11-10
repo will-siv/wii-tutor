@@ -3,3 +3,6 @@ a.out
 
 # vims
 *.swp
+
+#build
+builddir/
