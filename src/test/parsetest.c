@@ -48,8 +48,10 @@ int main(int argc, char **argv)
         tutor_class_strs[i] = classes;
         free(times);
     }
+    for (i = 0; i < tutor_list_len; ++i)
+        free(tutor_class_strs[i]);
     
 
-    /*free_tutors(tutors, tutor_list_len);*/
+    free_tutors(tutors, tutor_list_len);
     return 0;
 }
