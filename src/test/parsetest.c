@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include "../csvparse.h"
 #include "../parsestring.h"
+#include "scroll.h"
 
 int main(int argc, char **argv)
 {
@@ -22,6 +23,8 @@ int main(int argc, char **argv)
         printf("Tutor allocation failed??\n");
         return 1;
     }
+    fclose(fil);
+    char **tutor_class_strs = malloc(tutor_list_len * sizeof(char *));
     for (i = 0; i < tutor_list_len; ++i) {
         int j;
         printf("Tutor #%d:\nName: %s\nCourse List: ", i, tutors[i]->name);
@@ -42,10 +45,11 @@ int main(int argc, char **argv)
                 /*printf(", ");*/
         /*}*/
         printf("\n\n");
-        free(classes);
+        tutor_class_strs[i] = classes;
         free(times);
     }
-    free_tutors(tutors, tutor_list_len);
-    fclose(fil);
+    
+
+    /*free_tutors(tutors, tutor_list_len);*/
     return 0;
 }
