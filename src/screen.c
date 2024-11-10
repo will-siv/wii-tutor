@@ -1,5 +1,5 @@
 /* screen.c
- * but just testing it
+ * but no longer testing it
  */
 
 #include <curses.h>
@@ -9,13 +9,13 @@
 #include <time.h>
 
 #include "scroll.h"
-#include "csv_parse.h"
+#include "csvparse.h"
+#include "parsestring.h"
 
 #define ROWS 28
 #define COLS 84
 
 static char *title = "YWCC Tutoring: Powered by ACM";
-char *big = "REALLY REALLY LONG STRING SO LONG YOU SHIT YOUR PANTR";
 
 void print_center(WINDOW *win, struct scroll_text e) {
     int center = e.width / 2;
@@ -29,11 +29,47 @@ int main() {
     WINDOW *main, *left, *center, *right;
     WINDOW *tutorbox;
     WINDOW *tutor_column[4];
+
+    FILE *fp;
     struct scroll_text temp;
     time_t current_time;
     struct tm *time_info;
-    char timeString[8];
+    char timeString[8], **tutor_times;
+    struct person **tutors;
+    size_t tutor_list_len = 0;
+    int i;
 
+    fp = fopen("sample.csv", "r");
+    if (!fp) {
+        return 1;
+    }
+    tutors = parse_tutors(fp, &tutor_list_len);
+    if (!tutors) {
+        printf("Tutor allocation failed??\n");
+        return 1;
+    }
+    fclose(fp);
+    char **tutor_class_strs = malloc(tutor_list_len * sizeof(char *));
+    tutor_times = malloc(tutor_list_len * sizeof(char *));
+
+    for (i = 0; i < tutor_list_len; ++i) {
+        int j;
+        char *classes = tutor_class_to_string(tutors[i]->classes, tutors[i]->class_cnt);
+        /*for (j = 0; j < tutors[i]->class_cnt; ++j) {*/
+            /*printf("%s", tutors[i]->classes[j]);*/
+            /*if (j != tutors[i]->class_cnt-1)*/
+                /*printf(", ");*/
+        /*}*/
+        char *times = tutor_times_to_string(tutors[i]->times, tutors[i]->time_cnt);
+        /*for (j = 0; j < tutors[i]->time_cnt; ++j) {*/
+            /*struct time_interval *t = &tutors[i]->times[j];*/
+            /*printf("%hd-%hd on day #%d", t->time_1, t->time_2, t->weekday);*/
+            /*if (j != tutors[i]->time_cnt-1)*/
+                /*printf(", ");*/
+        /*}*/
+        tutor_class_strs[i] = classes;
+        tutor_times[i] = times;
+    }
     initscr();
     noecho();
 
@@ -48,6 +84,7 @@ int main() {
         box(center, 0,0);
         box(right, 0,0);
         box(main, 0,0);
+        box(tutorbox, 0,0);
         int t_height, top, bottom;
         int t_cols = 4;
         wgetscrreg(tutorbox, &top, &bottom);
@@ -60,20 +97,38 @@ int main() {
             if (i == t_cols)
                 tutor_column[i] = subwin(tutorbox, 0,  COLS/t_cols, 2, col+1);
         }
-        box(tutorbox, 0,0);
         temp = create_text(main, title, 1);
         print_center(main, temp);
 
-        struct scroll_text new = create_text(tutor_column[0], big, 3);
+        {
+            struct scroll_text S_tutor_names[8];
+            struct scroll_text S_tutor_times[8];
+            struct scroll_text S_tutor_classes[8];
     do {
+        int ii, tutor_index=0;
         time(&current_time);
         time_info = localtime(&current_time);
         strftime(timeString, 8, "%H:%M:%S", time_info);
 
-        scroll_update(tutor_column[0], &new);
+        for (ii = 0; ii < 2; ii++) {
+            WINDOW *col1, *col2;
+            col1 = tutor_column[ii*2];
+            col2 = tutor_column[ii*2+1];
+            for (int i = 0; i < 4; i++) {
+                S_tutor_names[tutor_index] = create_text(col1, tutors[tutor_index]->name, 3*i+2);
+                S_tutor_times[tutor_index] = create_text(col2, tutor_times[tutor_index], 3*i+2);
+                S_tutor_classes[tutor_index] = create_text(col2, tutor_class_strs[tutor_index], 3*i+3);
+                tutor_index++;
+            }
+            for (int i = ii*4; i < ii*4 + 4; i++) {
+                scroll_update(col1, &S_tutor_names[i]);
+                scroll_update(col2, &S_tutor_times[i]);
+                scroll_update(col2, &S_tutor_classes[i]);
+            }
+        }
+
         /* TODO: "semaphores", page flipping
          * sub boxes on their own schedule?
-         *
          */
 
         // left sub box: Current tutors
@@ -85,11 +140,16 @@ int main() {
 
         // time: bottom
         print_center(main, create_text(main, timeString, ROWS-1));
-        touchwin(main);
-        wrefresh(tutor_column[0]);
+        for (int i = 0; i < 8; i++) {
+            touchwin(main);
+            wrefresh(tutorbox);
+            touchwin(tutorbox);
+            wrefresh(tutor_column[i]);
+        }
         wrefresh(main);
         delay_output(1000);
     } while (1);
+        }
     endwin();
 
     exit(EXIT_SUCCESS);
