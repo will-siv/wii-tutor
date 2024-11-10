@@ -140,10 +140,8 @@ int main() {
 
         // time: bottom
         print_center(main, create_text(main, timeString, ROWS-1));
-        for (int i = 0; i < 8; i++) {
+        for (int i = 0; i < 4; i++) {
             touchwin(main);
-            wrefresh(tutorbox);
-            touchwin(tutorbox);
             wrefresh(tutor_column[i]);
         }
         wrefresh(main);
