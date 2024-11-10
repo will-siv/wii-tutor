@@ -10,7 +10,7 @@ struct time_interval {
     short time_1;
     short time_2;
     int weekday;
-}
+};
 
 struct person {
     char *name;

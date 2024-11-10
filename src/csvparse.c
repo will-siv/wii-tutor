@@ -2,47 +2,55 @@
 #include <string.h>
 #include <stdio.h>
 #include <time.h>
+#include <sys/types.h>
 #include "csvparse.h"
 
 static inline void free_tutor_name(char *n);
-static inline void free_tutor_classes(char **c);
-static inline void free_tutor_times(struct time_interval *t, size_t cnt);
+static inline void free_tutor_classes(char (*c)[]);
+static inline void free_tutor_times(struct time_interval *t);
 static int parse_class_list(char *classes, struct person *p);
 static int parse_times(char *times, struct person *p);
 static struct person *parse_tutor(char *line);
+static int count_lines(FILE *f);
 
 struct person **parse_tutors(FILE *csv, size_t *tutor_count)
 {
-    char *buf;
-    size_t *len;
+    char *buf = NULL;
+    size_t len = 0;
     ssize_t read;
-    int i;
+    struct person **tutors;
     int lines = count_lines(csv);
-    if (lines != 0)
+    if (lines <= 0)
         return NULL;
     rewind(csv);
-    struct person **tutors = calloc(lines, sizeof(struct person *));
+    tutors = calloc(lines, sizeof(struct person *));
     if (!tutors) {
         return NULL;
     }
-    *count = 0;
+    *tutor_count = 0;
+        printf("%d\n", *tutor_count);
     while ((read = getline(&buf, &len, csv)) > 0) {
-        tutor_count++;
-        tutors[cnt-1] = parse_tutor(buf);
-        if (!tutors[tutor_count-1]) {
-            free_tutors(tutors, tutor_count);
+        ++*tutor_count;
+        printf("%d\n", *tutor_count);
+        tutors[*tutor_count-1] = parse_tutor(buf);
+        printf("%d\n", *tutor_count);
+        if (!tutors[*tutor_count-1]) {
+            free_tutors(tutors, *tutor_count);
+            free(buf);
             return NULL;
         }
     }
     if (ferror(csv)) {
         fprintf(stderr, "Error detected reading the CSV");
-        free_tutors(tutors, cnt);
+        free_tutors(tutors, *tutor_count);
+        free(buf);
         return NULL;
     }
+    free(buf);
     return tutors;
 }
 
-static void free_tutors(struct person **t, int cnt)
+void free_tutors(struct person **t, int cnt)
 {
     int i;
     for (i = 0; i < cnt; ++i)
@@ -55,20 +63,24 @@ static void free_tutors(struct person **t, int cnt)
 
 static int count_lines(FILE *f)
 {
-    int n, i;
+    size_t i, n;
     int lns;
     char buf[BUFSIZ];
-    while (!ferror(f) && !feof(f)) {
+    while (1) {
+        if (ferror(f)) {
+            fprintf(stderr, "File had error on read\n");
+            return -1;
+        }
         n = fread(buf, 1, BUFSIZ, f);
-        for (i = 0; i < n; ++i)
-            if (buf[i] == '\n')
+        for (i = 0; i < n; ++i) {
+            if (buf[i] == '\n') {
                 ++lns;
+            }
+        }
+        if (feof(f))
+            break;
     }
-    if (ferror(f)) {
-        fprintf(stderr, "File had error on read\n");
-        return -1;
-    }
-
+    return lns;
 }
 /* Reads a singular tutor expecting the format:
  * Name\tClass List(comma separated)\tTime List(comma separated) */
@@ -82,9 +94,9 @@ static struct person *parse_tutor(char *line)
     if (!cur)
         return NULL;
     for (i = 0; i < 3; ++i) {
-        tok = strtok(i == 0 ? buf : NULL, "\t");
+        tok = strtok(i == 0 ? line : NULL, "\t");
         if (!tok) {
-            fprintf(stderr, "Line %d: Incorrect amount of fields in CSV, skipping...\n", linenum);
+            fprintf(stderr, "Incorrect amount of fields in CSV, skipping a line...\n");
             err = 1;
             break;
         }
@@ -99,21 +111,24 @@ else if (i == 1)
         return NULL;
     }
     cur->name_len = strlen(name);
-    cur->name = strdup(buf);
+    cur->name = strdup(line);
     if (!cur->name)
         return NULL;
-    ret = parse_class_list(classes, &cur);
+    ret = parse_class_list(classes, cur);
     if (ret != 0)
         return NULL;
-    ret = cur->times = parse_times(times, &cur);
+    ret = parse_times(times, cur);
     if (ret != 0)
         return NULL;
+    return cur;
 }
 
 static int parse_class_list(char *classes, struct person *p)
 {
     char *tok;
     size_t nbytes;
+    size_t i, clsnum;
+    char *ptr;
     for (tok = strtok(classes, ","); tok; tok = strtok(NULL, ",")) {
         ++p->class_cnt;
         tok = strtok(NULL, ",");
@@ -122,7 +137,15 @@ static int parse_class_list(char *classes, struct person *p)
     p->classes = malloc(nbytes);
     if (!p->classes)
         return -1;
-    memcpy(p->classes, classes, nbytes);
+    /*memcpy(p->classes, classes, nbytes);*/
+    clsnum = p->class_cnt;
+    ptr = classes;
+    for (i = 0; i < clsnum; ++i) {
+        strncpy(*(p->classes+i), ptr, 8);
+        printf("%s\n", ptr);
+        ptr = strchr(ptr, '\0');
+        ++ptr;
+    }
     return 0;
 }
 
@@ -130,8 +153,8 @@ static int parse_times(char *times, struct person *p)
 {
     char *tok;
     char *ptr = times;
-    int i;
-    _Bool in_str = 0;
+    size_t i;
+    printf("%s", ptr);
     for (tok = strtok(times, ","); tok; tok = strtok(NULL, ",")) {
         ++p->time_cnt;
         tok = strtok(NULL, ",");
@@ -141,7 +164,8 @@ static int parse_times(char *times, struct person *p)
         return -1;
     for (i = 0; i < p->time_cnt; ++i) {
         int wkday;
-        sscanf(ptr, "%d:00-%d:00 %c", &p->times[i].time_1, &p->times[i].time_2, &wkday);
+        sscanf(ptr, "%2hd-%2hd%1s", &p->times[i].time_1, &p->times[i].time_2, &wkday);
+        printf("%d\n", wkday);
         switch (wkday) {
         case 'U':
         case 'u':
@@ -186,7 +210,6 @@ static int parse_times(char *times, struct person *p)
 
 void free_person(struct person *p)
 {
-    int i;
     if (p->name) {
         free_tutor_name(p->name);
         p->name = NULL;
@@ -198,7 +221,7 @@ void free_person(struct person *p)
         p->class_cnt = 0;
     }
     if (p->times) {
-free_tutor_times(p->times, p->time_cnt);
+free_tutor_times(p->times);
         p->times = NULL;
         p->time_cnt = 0;
     }
@@ -210,14 +233,12 @@ static inline void free_tutor_name(char *n)
     free(n);
 }
 
-static inline void free_tutor_classes(char **c)
+static inline void free_tutor_classes(char (*c)[])
 {
     free(c);
 }
 
-static inline void free_tutor_times(struct time_interval *t, size_t cnt)
+static inline void free_tutor_times(struct time_interval *t)
 {
-    int i;
-    for (i = 0; i < cnt; ++i)
-        free(t[i]);
+    free(t);
 }
