@@ -31,14 +31,14 @@ char *tutor_times_to_string(struct time_interval *tms, size_t time_cnt)
     int i;
     char *ptr;
     /* 5 chars per time, 1 dash, 2 space, 3 weekday abbrev, 1 comma */
-    char *ret = malloc(17 * time_cnt);
-    memset(ret, 0, 17 * time_cnt);
+    char *ret = malloc(22 * time_cnt);
+    memset(ret, 0, 22 * time_cnt);
     ptr = ret;
     for (i = 0; i < time_cnt; ++i) {
         short t1 = tms[i].time_1;
         short t2 = tms[i].time_2;
         int wkdy = tms[i].weekday;
-        ptr = ptr + snprintf(ptr, 19, "%02d:00%2s-%02d:00%2s ", t1 < 13 ? t1 : t1-12, t1 < 13 ? "AM" : "PM", t2 < 13 ? t2 : t2-12, t2 < 13 ? "AM" : "PM");
+        ptr = ptr + snprintf(ptr, 17, "%02d:00%2s-%02d:00%2s ", t1 < 13 ? t1 : t1-12, t1 < 13 ? "AM" : "PM", t2 < 13 ? t2 : t2-12, t2 < 13 ? "AM" : "PM");
         switch (wkdy) {
         case 0:
             ptr = stpncpy(ptr, "Sun", 4);
