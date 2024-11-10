@@ -4,7 +4,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 
-#define ROWS 24
+#define ROWS 28
 #define COLS 84
 
 int main() {
