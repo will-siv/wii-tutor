@@ -13,7 +13,7 @@ struct scroll_text create_text(WINDOW *win, char *message, int y) {
 
     ret.width = w - 2;
     ret.message = message;
-    ret.direction = -1; /* starts at border; will flip when update is called */
+    ret.direction = 1; /* starts at border; will flip when update is called */
     ret.i = 0;
     ret.n = strnlen(message, 128);
     ret.y = y;
