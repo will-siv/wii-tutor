@@ -152,12 +152,12 @@ static int parse_times(char *times, struct person *p)
     for (tok = strtok(times, ","); tok; tok = strtok(NULL, ",")) {
         ++p->time_cnt;
     }
-    p->times = malloc(sizeof(struct time_interval) * p->time_cnt);
+    p->times = malloc(sizeof(struct time_interval) * (p->time_cnt));
     if (!p->times)
         return -1;
     for (i = 0; i < p->time_cnt; ++i) {
-        int wkday;
-        sscanf(ptr, "%2hd-%2hd%1s", &p->times[i].time_1, &p->times[i].time_2, &wkday);
+        char wkday;
+        sscanf(ptr, "%2hd-%2hd%*c%c", &p->times[i].time_1, &p->times[i].time_2, &wkday);
         switch (wkday) {
         case 'U':
         case 'u':

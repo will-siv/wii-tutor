@@ -18,7 +18,7 @@
 static char *title = "YWCC Tutoring: Powered by ACM";
 
 void print_center(WINDOW *win, struct scroll_text e) {
-    int center = e.width / 2;
+    int center = e.width / 2 + 1;
     int half_length = e.n / 2;
     int adj_col = center - half_length;
     mvwprintw(win, e.y, adj_col, e.message);
@@ -34,7 +34,7 @@ int main() {
     struct scroll_text temp;
     time_t current_time;
     struct tm *time_info;
-    char timeString[8], **tutor_times;
+    char *timeString = malloc(8 * sizeof(char)), **tutor_times;
     struct person **tutors;
     size_t tutor_list_len = 0;
     int i;
@@ -122,7 +122,7 @@ int main() {
             }
             for (int i = ii*4; i < ii*4 + 4; i++) {
                 scroll_update(col1, &S_tutor_names[i]);
-                scroll_update(col2, &S_tutor_times[i]);
+                print_center(col2, S_tutor_times[i]);
                 scroll_update(col2, &S_tutor_classes[i]);
             }
         }
@@ -141,8 +141,7 @@ int main() {
         // time: bottom
         print_center(main, create_text(main, timeString, ROWS-1));
         for (int i = 0; i < 4; i++) {
-            touchwin(main);
-            wrefresh(tutor_column[i]);
+            touchwin(tutor_column[i]);
         }
         wrefresh(main);
         delay_output(1000);
